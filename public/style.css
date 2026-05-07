@@ -20,8 +20,12 @@ body {
   padding: 2rem;
 }
 
+button {
+  font: inherit;
+}
+
 .app-shell {
-  width: min(100%, 420px);
+  width: min(100%, 520px);
   padding: 1.5rem;
   border-radius: 24px;
   background: rgba(10, 14, 35, 0.92);
@@ -35,33 +39,73 @@ h1 {
   text-align: center;
 }
 
-.status-panel {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
+.panel {
+  display: grid;
   gap: 1rem;
-  margin-bottom: 1rem;
 }
 
+.lobby-controls {
+  display: flex;
+  justify-content: flex-end;
+}
+
+#lobbyStatus,
+#gameInfo,
 #statusText {
   margin: 0;
   font-weight: 600;
 }
 
-#restartButton {
+button,
+.lobby-card button {
   border: none;
   border-radius: 999px;
   padding: 0.8rem 1rem;
   background: #6b5cf0;
   color: white;
   cursor: pointer;
-  font-weight: 600;
+  font-weight: 700;
   transition: transform 0.16s ease, background 0.16s ease;
 }
 
-#restartButton:hover {
+button:hover,
+.lobby-card button:hover {
   transform: translateY(-1px);
   background: #7357ff;
+}
+
+.lobby-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: grid;
+  gap: 0.75rem;
+}
+
+.lobby-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1rem;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 18px;
+}
+
+.lobby-empty {
+  padding: 1rem;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 18px;
+  color: rgba(255, 255, 255, 0.78);
+}
+
+.status-panel {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
 }
 
 .board {
@@ -93,11 +137,44 @@ h1 {
 
 .cell.disabled {
   cursor: default;
-  opacity: 0.78;
+  opacity: 0.72;
+}
+
+.hidden {
+  display: none !important;
+}
+
+.modal {
+  position: fixed;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  background: rgba(0, 0, 0, 0.5);
+}
+
+.modal.hidden {
+  display: none;
+}
+
+.modal-content {
+  width: min(100%, 420px);
+  padding: 2rem;
+  border-radius: 24px;
+  background: rgba(9, 14, 37, 0.98);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  text-align: center;
+}
+
+.modal-content h2 {
+  margin-top: 0;
 }
 
 @media (max-width: 420px) {
   .app-shell {
     padding: 1rem;
+  }
+
+  .modal-content {
+    padding: 1.25rem;
   }
 }

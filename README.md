@@ -5,11 +5,11 @@ A browser-based two-player Tic Tac Toe game using Node.js and Socket.io.
 ## Project structure
 
 - `public/` — served client files
-  - `index.html` — game UI and entry point
-  - `style.css` — board and page styling
+  - `index.html` — game UI and lobby entry screen
+  - `style.css` — styling for lobby, board, and modal
   - `script.js` — multiplayer browser logic
 - `src/` — server source code
-  - `server.js` — Node.js backend and Socket.io room manager
+  - `server.js` — Node.js backend, lobby manager, and game logic
 - `package.json` — dependencies and start script
 - `README.md` — documentation
 
@@ -35,12 +35,14 @@ http://localhost:3000
 
 ## Gameplay
 
-- The server pairs two browser clients into a multiplayer room.
-- One player is assigned `X`, the other `O`.
-- Players alternate turns until someone wins or the board fills.
-- After the game ends, both players can click "Restart Game" to begin a new match.
+- Users enter a lobby screen and can either create a new lobby or join one from the list.
+- When two players are matched, the game starts and players are assigned `X` or `O`.
+- Moves are validated on the server and broadcast to both players.
+- If a player disconnects during an active game, the remaining player automatically wins.
+- At game end, a modal prompts the player to return to the lobby.
 
 ## Notes
 
-- If an opponent disconnects, the remaining player is returned to a waiting state until a new player connects.
-- The server validates every move and broadcasts updates to both players.
+- The lobby list updates live as rooms are created and closed.
+- Closing a browser tab removes that lobby or ends the current game.
+- The server treats the remaining player as the winner when an opponent disconnects.

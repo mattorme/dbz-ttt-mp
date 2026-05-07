@@ -19,10 +19,14 @@ const WINNING_LINES = [
   [2, 4, 6],
 ];
 
-let waitingSocket = null;
-const rooms = new Map();
+const lobbies = new Map();
+const games = new Map();
 
 app.use(express.static(path.join(__dirname, '../public')));
+
+function generateId(prefix) {
+  return `${prefix}-${Math.random().toString(36).slice(2, 8)}`;
+}
 
 function calculateWinner(board) {
   return WINNING_LINES.find(([a, b, c]) => {
@@ -30,168 +34,249 @@ function calculateWinner(board) {
   });
 }
 
-function createRoom(firstSocket, secondSocket) {
-  const roomId = `room-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
-  const board = Array(9).fill('');
-  const room = {
-    id: roomId,
-    players: [firstSocket.id, secondSocket.id],
-    marks: {
-      [firstSocket.id]: 'X',
-      [secondSocket.id]: 'O',
-    },
-    board,
-    currentTurn: 'X',
-    active: true,
-    restartRequests: new Set(),
-  };
-
-  rooms.set(roomId, room);
-  firstSocket.join(roomId);
-  secondSocket.join(roomId);
-  firstSocket.data.roomId = roomId;
-  secondSocket.data.roomId = roomId;
-
-  firstSocket.emit('gameStart', {
-    mark: room.marks[firstSocket.id],
-    room: roomId,
-    board: room.board,
-    currentTurn: room.currentTurn,
-  });
-
-  secondSocket.emit('gameStart', {
-    mark: room.marks[secondSocket.id],
-    room: roomId,
-    board: room.board,
-    currentTurn: room.currentTurn,
-  });
+function getLobbyList() {
+  return Array.from(lobbies.values()).map((lobby) => ({
+    id: lobby.id,
+    hostId: lobby.hostId,
+    createdAt: lobby.createdAt,
+  }));
 }
 
-function resetRoom(room) {
-  room.board = Array(9).fill('');
-  room.currentTurn = 'X';
-  room.active = true;
-  room.restartRequests.clear();
-  io.to(room.id).emit('gameRestarted', {
-    board: room.board,
-    currentTurn: room.currentTurn,
+function broadcastLobbyList() {
+  io.emit('lobbyList', getLobbyList());
+}
+
+function getOpponentId(game, socketId) {
+  return game.players.find((playerId) => playerId !== socketId);
+}
+
+function startGame(hostSocket, guestSocket) {
+  const gameId = generateId('game');
+  const game = {
+    id: gameId,
+    players: [hostSocket.id, guestSocket.id],
+    marks: {
+      [hostSocket.id]: 'X',
+      [guestSocket.id]: 'O',
+    },
+    board: Array(9).fill(''),
+    currentTurn: 'X',
+    active: true,
+    createdAt: Date.now(),
+  };
+
+  games.set(gameId, game);
+  hostSocket.join(gameId);
+  guestSocket.join(gameId);
+
+  hostSocket.data.gameId = gameId;
+  hostSocket.data.lobbyId = null;
+  guestSocket.data.gameId = gameId;
+  guestSocket.data.lobbyId = null;
+
+  hostSocket.emit('gameStart', {
+    mark: 'X',
+    board: game.board,
+    currentTurn: game.currentTurn,
+  });
+
+  guestSocket.emit('gameStart', {
+    mark: 'O',
+    board: game.board,
+    currentTurn: game.currentTurn,
   });
 }
 
 io.on('connection', (socket) => {
   console.log(`Connected: ${socket.id}`);
 
-  if (waitingSocket && waitingSocket.connected && waitingSocket.id !== socket.id) {
-    createRoom(waitingSocket, socket);
-    waitingSocket = null;
-  } else {
-    waitingSocket = socket;
-    socket.emit('waitingForOpponent');
-  }
+  socket.data = {
+    lobbyId: null,
+    gameId: null,
+  };
+
+  socket.emit('lobbyList', getLobbyList());
+
+  socket.on('createLobby', () => {
+    if (socket.data.gameId) {
+      socket.emit('lobbyError', 'You are already in a game.');
+      return;
+    }
+    if (socket.data.lobbyId) {
+      socket.emit('lobbyError', 'You already have an open lobby.');
+      return;
+    }
+
+    const lobbyId = generateId('lobby');
+    lobbies.set(lobbyId, {
+      id: lobbyId,
+      hostId: socket.id,
+      createdAt: Date.now(),
+    });
+
+    socket.join(lobbyId);
+    socket.data.lobbyId = lobbyId;
+    socket.emit('lobbyCreated', { lobbyId });
+    broadcastLobbyList();
+  });
+
+  socket.on('joinLobby', ({ lobbyId }) => {
+    const lobby = lobbies.get(lobbyId);
+    if (!lobby) {
+      socket.emit('lobbyError', 'Lobby is no longer available.');
+      return;
+    }
+    if (socket.data.gameId || socket.data.lobbyId) {
+      socket.emit('lobbyError', 'You are already in another lobby or game.');
+      return;
+    }
+
+    const hostSocket = io.sockets.sockets.get(lobby.hostId);
+    if (!hostSocket || !hostSocket.connected) {
+      lobbies.delete(lobbyId);
+      broadcastLobbyList();
+      socket.emit('lobbyError', 'Host disconnected. Lobby closed.');
+      return;
+    }
+
+    lobbies.delete(lobbyId);
+    broadcastLobbyList();
+    startGame(hostSocket, socket);
+  });
+
+  socket.on('leaveLobby', () => {
+    const lobbyId = socket.data.lobbyId;
+    if (!lobbyId) {
+      return;
+    }
+
+    lobbies.delete(lobbyId);
+    socket.leave(lobbyId);
+    socket.data.lobbyId = null;
+    broadcastLobbyList();
+  });
 
   socket.on('makeMove', ({ index }) => {
-    const roomId = socket.data.roomId;
-    if (!roomId || !rooms.has(roomId)) {
-      socket.emit('invalidMove', 'No active game room.');
+    const gameId = socket.data.gameId;
+    if (!gameId || !games.has(gameId)) {
+      socket.emit('invalidMove', 'You are not in an active game.');
       return;
     }
 
-    const room = rooms.get(roomId);
-    if (!room.active) {
-      socket.emit('invalidMove', 'The game has ended. Restart to play again.');
+    const game = games.get(gameId);
+    if (!game.active) {
+      socket.emit('invalidMove', 'The game is no longer active.');
       return;
     }
 
-    const mark = room.marks[socket.id];
-    if (mark !== room.currentTurn) {
+    const mark = game.marks[socket.id];
+    if (mark !== game.currentTurn) {
       socket.emit('invalidMove', 'Not your turn.');
       return;
     }
 
-    if (index < 0 || index > 8 || room.board[index]) {
+    if (index < 0 || index > 8 || game.board[index]) {
       socket.emit('invalidMove', 'Invalid move.');
       return;
     }
 
-    room.board[index] = mark;
-    const winningLine = calculateWinner(room.board);
+    game.board[index] = mark;
     const nextTurn = mark === 'X' ? 'O' : 'X';
+    const winningLine = calculateWinner(game.board);
 
-    io.to(roomId).emit('moveAccepted', {
+    io.to(gameId).emit('moveAccepted', {
       index,
       mark,
-      board: room.board,
+      board: game.board,
       currentTurn: nextTurn,
     });
 
     if (winningLine) {
-      room.active = false;
-      io.to(roomId).emit('gameOver', {
+      game.active = false;
+      io.to(gameId).emit('gameOver', {
         result: 'win',
         winner: mark,
-        board: room.board,
+        board: game.board,
       });
+      games.delete(gameId);
       return;
     }
 
-    if (room.board.every((cell) => cell !== '')) {
-      room.active = false;
-      io.to(roomId).emit('gameOver', {
+    if (game.board.every((cell) => cell !== '')) {
+      game.active = false;
+      io.to(gameId).emit('gameOver', {
         result: 'draw',
-        board: room.board,
+        board: game.board,
       });
+      games.delete(gameId);
       return;
     }
 
-    room.currentTurn = nextTurn;
+    game.currentTurn = nextTurn;
   });
 
-  socket.on('restartGame', () => {
-    const roomId = socket.data.roomId;
-    if (!roomId || !rooms.has(roomId)) {
-      socket.emit('invalidRestart', 'No room available to restart.');
+  socket.on('leaveGame', () => {
+    const gameId = socket.data.gameId;
+    if (!gameId || !games.has(gameId)) {
+      socket.emit('invalidMove', 'No active game to leave.');
       return;
     }
 
-    const room = rooms.get(roomId);
-    if (room.active) {
-      socket.emit('invalidRestart', 'Cannot restart while the game is active.');
-      return;
+    const game = games.get(gameId);
+    const opponentId = getOpponentId(game, socket.id);
+    const opponentSocket = io.sockets.sockets.get(opponentId);
+
+    if (opponentSocket && opponentSocket.connected) {
+      const winner = game.marks[opponentId];
+      opponentSocket.emit('opponentDisconnected', {
+        winner,
+        board: game.board,
+      });
     }
 
-    room.restartRequests.add(socket.id);
-    if (room.restartRequests.size === 2) {
-      resetRoom(room);
-      return;
-    }
+    socket.leave(gameId);
+    socket.data.gameId = null;
+    games.delete(gameId);
+    socket.emit('leftGame');
+  });
 
-    socket.emit('restartPending');
+  socket.on('returnToLobby', () => {
+    if (socket.data.gameId) {
+      socket.leave(socket.data.gameId);
+      socket.data.gameId = null;
+    }
+    if (socket.data.lobbyId) {
+      socket.leave(socket.data.lobbyId);
+      socket.data.lobbyId = null;
+    }
+    socket.emit('lobbyList', getLobbyList());
   });
 
   socket.on('disconnect', () => {
     console.log(`Disconnected: ${socket.id}`);
 
-    if (waitingSocket && waitingSocket.id === socket.id) {
-      waitingSocket = null;
+    const lobbyId = socket.data.lobbyId;
+    if (lobbyId) {
+      lobbies.delete(lobbyId);
+      broadcastLobbyList();
     }
 
-    const roomId = socket.data.roomId;
-    if (!roomId || !rooms.has(roomId)) {
-      return;
-    }
-
-    const room = rooms.get(roomId);
-    room.active = false;
-    io.to(room.id).emit('opponentLeft');
-
-    room.players.forEach((playerId) => {
-      const playerSocket = io.sockets.sockets.get(playerId);
-      if (playerSocket && playerSocket.id !== socket.id && playerSocket.connected) {
-        waitingSocket = playerSocket;
+    const gameId = socket.data.gameId;
+    if (gameId && games.has(gameId)) {
+      const game = games.get(gameId);
+      if (game.active) {
+        const opponentId = getOpponentId(game, socket.id);
+        const opponentSocket = io.sockets.sockets.get(opponentId);
+        if (opponentSocket && opponentSocket.connected) {
+          const winner = game.marks[opponentId];
+          opponentSocket.emit('opponentDisconnected', {
+            winner,
+            board: game.board,
+          });
+        }
       }
-    });
-
-    rooms.delete(roomId);
+      games.delete(gameId);
+    }
   });
 });
 
