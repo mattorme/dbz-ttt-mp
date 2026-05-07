@@ -108,7 +108,17 @@ function joinLobby(lobbyId) {
 
 function openLobby(lobbyId) {
   currentLobbyId = lobbyId;
-  setLobbyStatus(`Lobby created. Waiting for opponent...`);
+  currentGameId = null;
+  playerMark = '';
+  boardState = Array(9).fill('');
+  gameActive = false;
+  myTurn = false;
+
+  showGameScreen();
+  gameInfo.textContent = 'Waiting for player to join...';
+  setGameStatus('Waiting for player to join...');
+  renderBoard();
+  showModal('Waiting for player to join...', false);
   createLobbyButton.disabled = true;
 }
 
@@ -134,8 +144,14 @@ function openGame(mark, board, currentTurn) {
   renderBoard();
 }
 
-function showModal(message) {
+function showModal(message, showAction = true) {
   modalMessage.textContent = message;
+  modal.classList.toggle('no-action', !showAction);
+  if (showAction) {
+    returnLobbyButton.classList.remove('hidden');
+  } else {
+    returnLobbyButton.classList.add('hidden');
+  }
   modal.classList.remove('hidden');
 }
 
@@ -156,12 +172,17 @@ function returnToLobby() {
 }
 
 function leaveGame() {
-  if (!currentGameId) {
+  if (currentGameId) {
+    socket.emit('leaveGame');
+    returnToLobby();
     return;
   }
 
-  socket.emit('leaveGame');
-  returnToLobby();
+  if (currentLobbyId) {
+    leaveLobby();
+    showLobbyScreen();
+    return;
+  }
 }
 
 socket.on('leftGame', () => {
@@ -181,6 +202,7 @@ socket.on('lobbyCreated', ({ lobbyId }) => {
 
 socket.on('gameStart', ({ mark, board, currentTurn }) => {
   currentLobbyId = null;
+  hideModal();
   openGame(mark, board, currentTurn);
 });
 
