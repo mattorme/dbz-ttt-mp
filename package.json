@@ -1,0 +1,13 @@
+{
+  "name": "dbz-ttt-mp",
+  "version": "1.0.0",
+  "description": "Multiplayer Tic Tac Toe using Node.js and Socket.io",
+  "main": "src/server.js",
+  "scripts": {
+    "start": "node src/server.js"
+  },
+  "dependencies": {
+    "express": "^4.18.4",
+    "socket.io": "^4.8.1"
+  }
+}

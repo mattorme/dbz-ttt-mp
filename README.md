@@ -1,20 +1,46 @@
-# Local Tic Tac Toe
+# Multiplayer Tic Tac Toe
 
-A simple two-player local Tic Tac Toe game built with vanilla JavaScript, HTML, and CSS.
+A browser-based two-player Tic Tac Toe game using Node.js and Socket.io.
 
-## Files
+## Project structure
 
-- `index.html` — game UI and board layout
-- `style.css` — styling for the board, buttons, and page
-- `script.js` — game logic, win/draw detection, and restart handling
+- `public/` — served client files
+  - `index.html` — game UI and entry point
+  - `style.css` — board and page styling
+  - `script.js` — multiplayer browser logic
+- `src/` — server source code
+  - `server.js` — Node.js backend and Socket.io room manager
+- `package.json` — dependencies and start script
+- `README.md` — documentation
 
 ## Run locally
 
-Open `index.html` in your browser to play.
+1. Install dependencies:
+
+```bash
+npm install
+```
+
+2. Start the server:
+
+```bash
+npm start
+```
+
+3. Open the browser at:
+
+```text
+http://localhost:3000
+```
 
 ## Gameplay
 
-- Player X starts first.
-- Click an empty cell to place your mark.
-- The game detects wins and draws automatically.
-- Click "Restart Game" to play again.
+- The server pairs two browser clients into a multiplayer room.
+- One player is assigned `X`, the other `O`.
+- Players alternate turns until someone wins or the board fills.
+- After the game ends, both players can click "Restart Game" to begin a new match.
+
+## Notes
+
+- If an opponent disconnects, the remaining player is returned to a waiting state until a new player connects.
+- The server validates every move and broadcasts updates to both players.

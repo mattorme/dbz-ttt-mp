@@ -3,14 +3,14 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Local Tic Tac Toe</title>
+  <title>Multiplayer Tic Tac Toe</title>
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
   <main class="app-shell">
-    <h1>Two-Player Tic Tac Toe</h1>
+    <h1>Multiplayer Tic Tac Toe</h1>
     <section class="status-panel">
-      <p id="statusText">Player X's turn</p>
+      <p id="statusText">Connecting...</p>
       <button id="restartButton" type="button">Restart Game</button>
     </section>
 
@@ -27,6 +27,7 @@
     </section>
   </main>
 
+  <script src="/socket.io/socket.io.js"></script>
   <script src="script.js"></script>
 </body>
 </html>
