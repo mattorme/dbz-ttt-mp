@@ -169,6 +169,10 @@ button:hover,
   margin-top: 0;
 }
 
+.modal.no-action button {
+  display: none;
+}
+
 @media (max-width: 420px) {
   .app-shell {
     padding: 1rem;
