@@ -66,7 +66,28 @@ function renderLobbyList(lobbies) {
 function renderBoard() {
   cells.forEach((cell) => {
     const index = Number(cell.dataset.index);
-    cell.textContent = boardState[index] || '';
+    const mark = boardState[index];
+
+    cell.innerHTML = '';
+
+    if (mark === 'X') {
+      const img = document.createElement('img');
+      img.src = '/assets/goku.svg';
+      img.alt = 'Goku';
+      cell.appendChild(img);
+      cell.classList.add('goku');
+      cell.classList.remove('vegeta');
+    } else if (mark === 'O') {
+      const img = document.createElement('img');
+      img.src = '/assets/vegeta.svg';
+      img.alt = 'Vegeta';
+      cell.appendChild(img);
+      cell.classList.add('vegeta');
+      cell.classList.remove('goku');
+    } else {
+      cell.classList.remove('goku', 'vegeta');
+    }
+
     const disabled = !gameActive || !myTurn || !!boardState[index];
     cell.classList.toggle('disabled', disabled);
   });

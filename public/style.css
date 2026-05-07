@@ -124,6 +124,26 @@ button:hover,
   font-weight: 700;
   cursor: pointer;
   transition: transform 0.14s ease, background 0.16s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.cell img {
+  max-width: 90%;
+  max-height: 90%;
+  object-fit: contain;
+}
+
+.cell.goku {
+  border-color: #ffd700;
+  box-shadow: inset 0 0 15px rgba(255, 215, 0, 0.3);
+}
+
+.cell.vegeta {
+  border-color: #a855f7;
+  box-shadow: inset 0 0 15px rgba(168, 85, 247, 0.3);
 }
 
 .cell:hover {
