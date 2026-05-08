@@ -9,14 +9,20 @@ const modal = document.getElementById('resultModal');
 const modalMessage = document.getElementById('modalMessage');
 const returnLobbyButton = document.getElementById('returnLobbyButton');
 const cells = Array.from(document.querySelectorAll('.cell'));
+const characterSelector = document.getElementById('characterSelector');
+const characterSelectorText = document.getElementById('characterSelectorText');
+const characterOptions = document.getElementById('characterOptions');
 
 const socket = io();
 let currentLobbyId = null;
-let currentGameId = null;
+let isInGame = false;
 let playerMark = '';
 let boardState = Array(9).fill('');
 let myTurn = false;
 let gameActive = false;
+let characterCatalog = [];
+let markCharacters = { X: null, O: null };
+let myCharacterId = null;
 const leaveGameButton = document.getElementById('leaveGameButton');
 
 function showLobbyScreen() {
@@ -37,6 +43,87 @@ function setLobbyStatus(message) {
 
 function setGameStatus(message) {
   statusText.textContent = message;
+}
+
+function findCharacter(characterId) {
+  return characterCatalog.find((character) => character.id === characterId) || null;
+}
+
+function areCharactersLockedIn() {
+  return Boolean(markCharacters.X && markCharacters.O);
+}
+
+function resetCharacterState() {
+  characterCatalog = [];
+  markCharacters = { X: null, O: null };
+  myCharacterId = null;
+  characterSelector.classList.add('hidden');
+  characterOptions.innerHTML = '';
+}
+
+function renderCharacterSelector() {
+  if (!characterCatalog.length) {
+    characterOptions.innerHTML = '';
+    return;
+  }
+
+  characterOptions.innerHTML = '';
+
+  const takenCharacters = new Set(
+    Object.values(markCharacters).filter((characterId) => Boolean(characterId))
+  );
+
+  characterCatalog.forEach((character) => {
+    const option = document.createElement('button');
+    option.type = 'button';
+    option.className = 'character-option';
+    option.dataset.characterId = character.id;
+    option.setAttribute('aria-label', `Select ${character.name}`);
+
+    const unavailable = takenCharacters.has(character.id) && myCharacterId !== character.id;
+    if (myCharacterId === character.id) {
+      option.classList.add('selected');
+    }
+    if (unavailable) {
+      option.classList.add('unavailable');
+      option.disabled = true;
+    }
+
+    option.innerHTML = `
+      <img src="${character.asset}" alt="${character.name}" />
+      <span>${character.name}</span>
+    `;
+
+    option.addEventListener('click', () => {
+      socket.emit('selectCharacter', { characterId: character.id });
+    });
+
+    characterOptions.appendChild(option);
+  });
+}
+
+function updateCharacterSelectionState({ markCharacters: nextMarkCharacters }) {
+  if (nextMarkCharacters) {
+    markCharacters = nextMarkCharacters;
+  }
+  myCharacterId = markCharacters[playerMark] || null;
+  const bothSelected = areCharactersLockedIn();
+
+  characterSelector.classList.toggle('hidden', bothSelected);
+
+  if (!bothSelected) {
+    characterSelectorText.textContent = myCharacterId
+      ? 'Character locked in. Waiting for opponent to choose...'
+      : 'Select your fighter to start.';
+    setGameStatus(myCharacterId ? 'Waiting for opponent to select a character...' : 'Select your character to begin.');
+  } else {
+    setGameStatus(myTurn ? 'Your turn' : "Opponent's turn");
+  }
+
+  const myCharacter = findCharacter(myCharacterId);
+  gameInfo.textContent = `You are ${playerMark}${myCharacter ? ` (${myCharacter.name})` : ''}`;
+
+  renderCharacterSelector();
 }
 
 function renderLobbyList(lobbies) {
@@ -69,26 +156,31 @@ function renderBoard() {
     const mark = boardState[index];
 
     cell.innerHTML = '';
+    Array.from(cell.classList).forEach((className) => {
+      if (className.startsWith('character-')) {
+        cell.classList.remove(className);
+      }
+    });
 
-    if (mark === 'X') {
-      const img = document.createElement('img');
-      img.src = '/assets/goku.svg';
-      img.alt = 'Goku';
-      cell.appendChild(img);
-      cell.classList.add('goku');
-      cell.classList.remove('vegeta');
-    } else if (mark === 'O') {
-      const img = document.createElement('img');
-      img.src = '/assets/vegeta.svg';
-      img.alt = 'Vegeta';
-      cell.appendChild(img);
-      cell.classList.add('vegeta');
-      cell.classList.remove('goku');
-    } else {
-      cell.classList.remove('goku', 'vegeta');
+    if (mark === 'X' || mark === 'O') {
+      const characterId = markCharacters[mark];
+      const character = findCharacter(characterId);
+      if (!character) {
+        cell.textContent = mark;
+      } else {
+        const img = document.createElement('img');
+        img.src = character.asset;
+        img.alt = character.name;
+        cell.appendChild(img);
+        cell.classList.add(`character-${character.id}`);
+      }
     }
 
-    const disabled = !gameActive || !myTurn || !!boardState[index];
+    const disabled =
+      !gameActive ||
+      !myTurn ||
+      !areCharactersLockedIn() ||
+      !!boardState[index];
     cell.classList.toggle('disabled', disabled);
   });
 }
@@ -96,6 +188,9 @@ function renderBoard() {
 function setTurnState({ active, turn }) {
   gameActive = active;
   myTurn = playerMark === turn;
+  if (areCharactersLockedIn() && gameActive) {
+    setGameStatus(myTurn ? 'Your turn' : "Opponent's turn");
+  }
   renderBoard();
 }
 
@@ -107,7 +202,7 @@ function updateBoard(board) {
 function handleCellClick(event) {
   const cell = event.currentTarget;
   const index = Number(cell.dataset.index);
-  if (!gameActive || !myTurn || boardState[index]) {
+  if (!gameActive || !myTurn || !areCharactersLockedIn() || boardState[index]) {
     return;
   }
 
@@ -129,11 +224,12 @@ function joinLobby(lobbyId) {
 
 function openLobby(lobbyId) {
   currentLobbyId = lobbyId;
-  currentGameId = null;
+  isInGame = false;
   playerMark = '';
   boardState = Array(9).fill('');
   gameActive = false;
   myTurn = false;
+  resetCharacterState();
 
   showGameScreen();
   gameInfo.textContent = 'Waiting for player to join...';
@@ -153,15 +249,21 @@ function leaveLobby() {
   createLobbyButton.disabled = false;
 }
 
-function openGame(mark, board, currentTurn) {
-  currentGameId = true;
+function openGame({ mark, board, currentTurn, characters, markCharacters: initialMarkCharacters }) {
+  if (!Array.isArray(characters) || !characters.length) {
+    setGameStatus('Unable to load character list. Please refresh or restart the server.');
+    return;
+  }
+
+  isInGame = true;
   playerMark = mark;
   boardState = board;
   gameActive = true;
   myTurn = playerMark === currentTurn;
+  characterCatalog = characters;
+  markCharacters = initialMarkCharacters || { X: null, O: null };
   showGameScreen();
-  gameInfo.textContent = `You are ${playerMark}`;
-  setGameStatus(myTurn ? 'Your turn' : "Opponent's turn");
+  updateCharacterSelectionState({ markCharacters });
   renderBoard();
 }
 
@@ -181,11 +283,12 @@ function hideModal() {
 }
 
 function returnToLobby() {
-  currentGameId = null;
+  isInGame = false;
   playerMark = '';
   boardState = Array(9).fill('');
   myTurn = false;
   gameActive = false;
+  resetCharacterState();
   socket.emit('returnToLobby');
   showLobbyScreen();
   setLobbyStatus('Choose a lobby or create one.');
@@ -193,7 +296,7 @@ function returnToLobby() {
 }
 
 function leaveGame() {
-  if (currentGameId) {
+  if (isInGame) {
     socket.emit('leaveGame');
     returnToLobby();
     return;
@@ -221,16 +324,20 @@ socket.on('lobbyCreated', ({ lobbyId }) => {
   openLobby(lobbyId);
 });
 
-socket.on('gameStart', ({ mark, board, currentTurn }) => {
+socket.on('gameStart', (payload) => {
   currentLobbyId = null;
   hideModal();
-  openGame(mark, board, currentTurn);
+  openGame(payload);
+});
+
+socket.on('characterSelectionUpdate', (payload) => {
+  updateCharacterSelectionState(payload);
+  renderBoard();
 });
 
 socket.on('moveAccepted', ({ board, currentTurn }) => {
   updateBoard(board);
   setTurnState({ active: true, turn: currentTurn });
-  setGameStatus(myTurn ? 'Your turn' : "Opponent's turn");
 });
 
 socket.on('gameOver', ({ result, winner, board }) => {

@@ -8,6 +8,14 @@ const server = http.createServer(app);
 const io = new Server(server);
 
 const PORT = process.env.PORT || 3000;
+const CHARACTERS = [
+  { id: 'goku', name: 'Goku', asset: '/assets/goku.svg' },
+  { id: 'vegeta', name: 'Vegeta', asset: '/assets/vegeta.svg' },
+  { id: 'gohan', name: 'Gohan', asset: '/assets/gohan.svg' },
+  { id: 'piccolo', name: 'Piccolo', asset: '/assets/piccolo.svg' },
+  { id: 'frieza', name: 'Frieza', asset: '/assets/frieza.svg' },
+  { id: 'trunks', name: 'Trunks', asset: '/assets/trunks.svg' },
+];
 const WINNING_LINES = [
   [0, 1, 2],
   [3, 4, 5],
@@ -50,6 +58,18 @@ function getOpponentId(game, socketId) {
   return game.players.find((playerId) => playerId !== socketId);
 }
 
+function getCharacterSelectionPayload(game) {
+  const markCharacters = {};
+  Object.entries(game.marks).forEach(([playerId, mark]) => {
+    markCharacters[mark] = game.playerCharacters[playerId] || null;
+  });
+
+  return {
+    markCharacters,
+    allSelected: game.players.every((playerId) => Boolean(game.playerCharacters[playerId])),
+  };
+}
+
 function startGame(hostSocket, guestSocket) {
   const gameId = generateId('game');
   const game = {
@@ -62,6 +82,10 @@ function startGame(hostSocket, guestSocket) {
     board: Array(9).fill(''),
     currentTurn: 'X',
     active: true,
+    playerCharacters: {
+      [hostSocket.id]: null,
+      [guestSocket.id]: null,
+    },
     createdAt: Date.now(),
   };
 
@@ -78,12 +102,16 @@ function startGame(hostSocket, guestSocket) {
     mark: 'X',
     board: game.board,
     currentTurn: game.currentTurn,
+    characters: CHARACTERS,
+    ...getCharacterSelectionPayload(game),
   });
 
   guestSocket.emit('gameStart', {
     mark: 'O',
     board: game.board,
     currentTurn: game.currentTurn,
+    characters: CHARACTERS,
+    ...getCharacterSelectionPayload(game),
   });
 }
 
@@ -169,6 +197,11 @@ io.on('connection', (socket) => {
       return;
     }
 
+    if (!game.players.every((playerId) => Boolean(game.playerCharacters[playerId]))) {
+      socket.emit('invalidMove', 'Both players must select a character before playing.');
+      return;
+    }
+
     const mark = game.marks[socket.id];
     if (mark !== game.currentTurn) {
       socket.emit('invalidMove', 'Not your turn.');
@@ -213,6 +246,32 @@ io.on('connection', (socket) => {
     }
 
     game.currentTurn = nextTurn;
+  });
+
+  socket.on('selectCharacter', ({ characterId }) => {
+    const gameId = socket.data.gameId;
+    if (!gameId || !games.has(gameId)) {
+      socket.emit('invalidMove', 'You are not in an active game.');
+      return;
+    }
+
+    const game = games.get(gameId);
+    const character = CHARACTERS.find((option) => option.id === characterId);
+    if (!character) {
+      socket.emit('invalidMove', 'Invalid character selection.');
+      return;
+    }
+
+    const alreadyTaken = Object.entries(game.playerCharacters).find(([playerId, selectedId]) => {
+      return playerId !== socket.id && selectedId === characterId;
+    });
+    if (alreadyTaken) {
+      socket.emit('invalidMove', 'That character is already taken. Choose a different one.');
+      return;
+    }
+
+    game.playerCharacters[socket.id] = characterId;
+    io.to(gameId).emit('characterSelectionUpdate', getCharacterSelectionPayload(game));
   });
 
   socket.on('leaveGame', () => {
