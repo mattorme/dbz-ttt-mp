@@ -41,8 +41,8 @@ button {
   border-radius: 24px;
   background: rgba(255, 255, 255, 0.15);
   border: 1px solid rgba(255, 255, 255, 0.2);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
   position: relative;
 }
@@ -93,7 +93,7 @@ h1 {
   color: var(--super-gold);
 }
 
-button,
+button:not(.cell),
 .lobby-card button {
   border: none;
   border-radius: 999px;
@@ -108,7 +108,7 @@ button,
   overflow: hidden;
 }
 
-button::before,
+button:not(.cell)::before,
 .lobby-card button::before {
   content: '';
   position: absolute;
@@ -120,13 +120,13 @@ button::before,
   transition: left 0.5s;
 }
 
-button:hover,
+button:not(.cell):hover,
 .lobby-card button:hover {
   transform: translateY(-2px) scale(1.05);
   box-shadow: 0 6px 20px rgba(255, 107, 53, 0.6), 0 0 30px var(--super-gold);
 }
 
-button:hover::before,
+button:not(.cell):hover::before,
 .lobby-card button:hover::before {
   left: 100%;
 }
@@ -186,8 +186,8 @@ button:hover::before,
   background: rgba(255, 255, 255, 0.15);
   border-radius: 24px;
   border: 1px solid rgba(255, 255, 255, 0.2);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
   margin: 0 auto;
   max-width: 400px;
@@ -272,6 +272,12 @@ button:hover::before,
   box-shadow: 0 4px 20px rgba(255, 215, 0, 0.2);
 }
 
+.cell:active:not(.disabled) {
+  background: rgba(255, 255, 255, 0.2);
+  transform: scale(1.02);
+  box-shadow: 0 0 0 2px rgba(255, 215, 0, 0.35) inset;
+}
+
 .cell:focus-visible {
   outline: 3px solid var(--super-gold);
   outline-offset: 0.2rem;
@@ -305,8 +311,8 @@ button:hover::before,
   border-radius: 24px;
   background: rgba(255, 255, 255, 0.1);
   border: 1px solid rgba(255, 255, 255, 0.2);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
   text-align: center;
   position: relative;
