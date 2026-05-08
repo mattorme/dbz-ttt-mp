@@ -1,0 +1,25 @@
+<svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+  <!-- Head wrap -->
+  <ellipse cx="100" cy="42" rx="30" ry="14" fill="#f5f5f5"/>
+  <!-- Head -->
+  <circle cx="100" cy="88" r="35" fill="#74c365"/>
+  <!-- Antenna -->
+  <path d="M 90 54 Q 82 38 86 26" stroke="#5aa64f" stroke-width="4" fill="none" stroke-linecap="round"/>
+  <path d="M 110 54 Q 118 38 114 26" stroke="#5aa64f" stroke-width="4" fill="none" stroke-linecap="round"/>
+  <!-- Eyes -->
+  <ellipse cx="86" cy="79" rx="7" ry="4.5" fill="#f7b500"/>
+  <ellipse cx="114" cy="79" rx="7" ry="4.5" fill="#f7b500"/>
+  <circle cx="86" cy="79" r="2.1" fill="#1a1a1a"/>
+  <circle cx="114" cy="79" r="2.1" fill="#1a1a1a"/>
+  <!-- Mouth -->
+  <path d="M 86 100 Q 100 108 114 100" stroke="#41793a" stroke-width="2" fill="none" stroke-linecap="round"/>
+  <!-- Outfit -->
+  <rect x="56" y="126" width="88" height="52" rx="10" fill="#6d28d9"/>
+  <rect x="80" y="126" width="40" height="12" rx="4" fill="#dc2626"/>
+  <!-- Arms -->
+  <rect x="30" y="136" width="26" height="24" rx="12" fill="#74c365"/>
+  <rect x="144" y="136" width="26" height="24" rx="12" fill="#74c365"/>
+  <!-- Aura -->
+  <circle cx="100" cy="100" r="52" fill="none" stroke="#22c55e" stroke-width="2" opacity="0.5"/>
+  <circle cx="100" cy="100" r="58" fill="none" stroke="#86efac" stroke-width="1.5" opacity="0.35"/>
+</svg>

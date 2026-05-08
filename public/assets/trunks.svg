@@ -1,0 +1,23 @@
+<svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+  <!-- Hair -->
+  <path d="M 100 18 L 120 28 L 134 22 L 138 36 L 124 46 L 130 58 L 112 60 L 100 56 L 88 60 L 70 58 L 76 46 L 62 36 L 66 22 L 80 28 Z" fill="#9ca3ff"/>
+  <path d="M 100 24 L 116 32 L 125 28 L 126 40 L 114 48 L 100 46 L 86 48 L 74 40 L 75 28 L 84 32 Z" fill="#c4b5fd"/>
+  <!-- Face -->
+  <circle cx="100" cy="88" r="35" fill="#d9b08a"/>
+  <!-- Eyes -->
+  <circle cx="86" cy="79" r="4.5" fill="#1f2937"/>
+  <circle cx="114" cy="79" r="4.5" fill="#1f2937"/>
+  <circle cx="87" cy="78" r="1.5" fill="#ffffff"/>
+  <circle cx="115" cy="78" r="1.5" fill="#ffffff"/>
+  <!-- Mouth -->
+  <path d="M 86 100 Q 100 108 114 100" stroke="#8b6f47" stroke-width="2" fill="none" stroke-linecap="round"/>
+  <!-- Jacket -->
+  <rect x="56" y="126" width="88" height="52" rx="10" fill="#2563eb"/>
+  <rect x="80" y="126" width="40" height="12" rx="4" fill="#facc15"/>
+  <!-- Arms -->
+  <rect x="30" y="138" width="26" height="24" rx="12" fill="#d9b08a"/>
+  <rect x="144" y="138" width="26" height="24" rx="12" fill="#d9b08a"/>
+  <!-- Aura -->
+  <circle cx="100" cy="100" r="52" fill="none" stroke="#60a5fa" stroke-width="2" opacity="0.5"/>
+  <circle cx="100" cy="100" r="58" fill="none" stroke="#c7d2fe" stroke-width="1.5" opacity="0.35"/>
+</svg>

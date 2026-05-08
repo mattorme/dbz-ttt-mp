@@ -1,0 +1,25 @@
+<svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+  <!-- Head dome -->
+  <ellipse cx="100" cy="58" rx="22" ry="16" fill="#d946ef"/>
+  <!-- Head -->
+  <circle cx="100" cy="90" r="35" fill="#f8f3ff"/>
+  <!-- Temple accents -->
+  <ellipse cx="73" cy="90" rx="7" ry="13" fill="#d946ef"/>
+  <ellipse cx="127" cy="90" rx="7" ry="13" fill="#d946ef"/>
+  <!-- Eyes -->
+  <ellipse cx="86" cy="80" rx="6.5" ry="4.5" fill="#ef4444"/>
+  <ellipse cx="114" cy="80" rx="6.5" ry="4.5" fill="#ef4444"/>
+  <circle cx="86" cy="80" r="2" fill="#1a1a1a"/>
+  <circle cx="114" cy="80" r="2" fill="#1a1a1a"/>
+  <!-- Mouth -->
+  <path d="M 86 102 Q 100 110 114 102" stroke="#8b7fa5" stroke-width="2" fill="none" stroke-linecap="round"/>
+  <!-- Armor/body -->
+  <rect x="58" y="126" width="84" height="52" rx="12" fill="#f8f3ff"/>
+  <rect x="82" y="126" width="36" height="14" rx="4" fill="#d946ef"/>
+  <!-- Arms -->
+  <rect x="30" y="138" width="28" height="22" rx="11" fill="#f8f3ff"/>
+  <rect x="142" y="138" width="28" height="22" rx="11" fill="#f8f3ff"/>
+  <!-- Aura -->
+  <circle cx="100" cy="100" r="52" fill="none" stroke="#e879f9" stroke-width="2" opacity="0.5"/>
+  <circle cx="100" cy="100" r="58" fill="none" stroke="#f5d0fe" stroke-width="1.5" opacity="0.35"/>
+</svg>
