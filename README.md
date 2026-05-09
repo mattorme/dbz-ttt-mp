@@ -2,6 +2,13 @@
 
 A browser-based two-player Tic Tac Toe game using Node.js and Socket.io.
 
+## Why I built this
+
+I built this project to get hands-on with WebSockets and real-time system design in a practical, user-facing way.  
+The main goal was to model bidirectional communication between two clients, keep shared game state synchronized with low latency, and enforce server-authoritative rules so both players always see a consistent match.
+
+Using a multiplayer game as the testbed let me explore core real-time concepts end to end: connection lifecycle events, event-driven messaging, lobby orchestration, and fault handling for disconnect/reconnect scenarios.
+
 ## Project structure
 
 - `public/` — served client files
