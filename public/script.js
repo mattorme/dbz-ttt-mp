@@ -9,6 +9,7 @@ const modal = document.getElementById('resultModal');
 const modalMessage = document.getElementById('modalMessage');
 const returnLobbyButton = document.getElementById('returnLobbyButton');
 const cells = Array.from(document.querySelectorAll('.cell'));
+const characterModal = document.getElementById('characterModal');
 const characterSelector = document.getElementById('characterSelector');
 const characterSelectorText = document.getElementById('characterSelectorText');
 const characterOptions = document.getElementById('characterOptions');
@@ -57,7 +58,7 @@ function resetCharacterState() {
   characterCatalog = [];
   markCharacters = { X: null, O: null };
   myCharacterId = null;
-  characterSelector.classList.add('hidden');
+  characterModal.classList.add('hidden');
   characterOptions.innerHTML = '';
 }
 
@@ -109,7 +110,7 @@ function updateCharacterSelectionState({ markCharacters: nextMarkCharacters }) {
   myCharacterId = markCharacters[playerMark] || null;
   const bothSelected = areCharactersLockedIn();
 
-  characterSelector.classList.toggle('hidden', bothSelected);
+  characterModal.classList.toggle('hidden', bothSelected);
 
   if (!bothSelected) {
     characterSelectorText.textContent = myCharacterId

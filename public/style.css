@@ -179,12 +179,16 @@ button:not(.cell):not(.character-option):hover::before,
 }
 
 .character-selector {
+  width: min(100%, 420px);
   padding: 1rem;
-  background: rgba(255, 255, 255, 0.1);
-  border: 1px solid rgba(255, 255, 255, 0.15);
-  border-radius: 18px;
+  background: rgba(18, 18, 26, 0.9);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 20px;
   display: grid;
   gap: 0.8rem;
+  box-shadow: 0 12px 36px rgba(0, 0, 0, 0.45);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
 }
 
 #characterSelectorText {
@@ -336,6 +340,7 @@ button:not(.cell):not(.character-option):hover::before,
   place-items: center;
   background: rgba(0, 0, 0, 0.8);
   backdrop-filter: blur(5px);
+  z-index: 1000;
 }
 
 .modal.hidden {
@@ -383,6 +388,10 @@ button:not(.cell):not(.character-option):hover::before,
 
 .modal.no-action button {
   display: none;
+}
+
+#characterModal {
+  background: rgba(0, 0, 0, 0.7);
 }
 
 @media (max-width: 420px) {

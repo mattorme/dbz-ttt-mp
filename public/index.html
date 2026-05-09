@@ -26,10 +26,12 @@
         </div>
         <button id="leaveGameButton" type="button">Leave Game</button>
       </div>
-      <section id="characterSelector" class="character-selector hidden" aria-label="Character selector">
-        <p id="characterSelectorText">Select your fighter to start.</p>
-        <div id="characterOptions" class="character-options"></div>
-      </section>
+      <div id="characterModal" class="modal hidden" role="dialog" aria-modal="true" aria-label="Character selector">
+        <section id="characterSelector" class="character-selector">
+          <p id="characterSelectorText">Select your fighter to start.</p>
+          <div id="characterOptions" class="character-options"></div>
+        </section>
+      </div>
       <section class="board" id="board" aria-label="Tic Tac Toe board">
         <button class="cell" data-index="0" aria-label="Cell 1"></button>
         <button class="cell" data-index="1" aria-label="Cell 2"></button>
