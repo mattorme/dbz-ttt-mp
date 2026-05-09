@@ -8,9 +8,9 @@ const statusText = document.getElementById('statusText');
 const modal = document.getElementById('resultModal');
 const modalMessage = document.getElementById('modalMessage');
 const returnLobbyButton = document.getElementById('returnLobbyButton');
+const board = document.getElementById('board');
 const cells = Array.from(document.querySelectorAll('.cell'));
 const characterModal = document.getElementById('characterModal');
-const characterSelector = document.getElementById('characterSelector');
 const characterSelectorText = document.getElementById('characterSelectorText');
 const characterOptions = document.getElementById('characterOptions');
 
@@ -24,7 +24,46 @@ let gameActive = false;
 let characterCatalog = [];
 let markCharacters = { X: null, O: null };
 let myCharacterId = null;
+let pendingAnimatedMoveIndex = -1;
+let lastImpactAnimationKey = '';
 const leaveGameButton = document.getElementById('leaveGameButton');
+const animationCleanupTimers = new WeakMap();
+
+function restartAnimation(element, className, durationMs = 700) {
+  if (!element) {
+    return;
+  }
+
+  let elementTimers = animationCleanupTimers.get(element);
+  if (!elementTimers) {
+    elementTimers = new Map();
+    animationCleanupTimers.set(element, elementTimers);
+  }
+
+  const activeTimer = elementTimers.get(className);
+  if (activeTimer) {
+    clearTimeout(activeTimer);
+  }
+
+  element.classList.remove(className);
+  void element.offsetWidth;
+  element.classList.add(className);
+
+  const cleanupTimer = setTimeout(() => {
+    element.classList.remove(className);
+    const timers = animationCleanupTimers.get(element);
+    if (timers) {
+      timers.delete(className);
+    }
+  }, durationMs);
+
+  elementTimers.set(className, cleanupTimer);
+}
+
+function setGameInfo(message) {
+  gameInfo.textContent = message;
+  restartAnimation(gameInfo, 'game-info-flare', 560);
+}
 
 function showLobbyScreen() {
   lobbyScreen.classList.remove('hidden');
@@ -44,6 +83,13 @@ function setLobbyStatus(message) {
 
 function setGameStatus(message) {
   statusText.textContent = message;
+  statusText.classList.remove('status-text-your-turn', 'status-text-opponent-turn');
+  if (message === 'Your turn') {
+    statusText.classList.add('status-text-your-turn');
+  } else if (message === "Opponent's turn") {
+    statusText.classList.add('status-text-opponent-turn');
+  }
+  restartAnimation(statusText, 'status-text-surge', 640);
 }
 
 function findCharacter(characterId) {
@@ -58,6 +104,8 @@ function resetCharacterState() {
   characterCatalog = [];
   markCharacters = { X: null, O: null };
   myCharacterId = null;
+  pendingAnimatedMoveIndex = -1;
+  lastImpactAnimationKey = '';
   characterModal.classList.add('hidden');
   characterOptions.innerHTML = '';
 }
@@ -122,7 +170,7 @@ function updateCharacterSelectionState({ markCharacters: nextMarkCharacters }) {
   }
 
   const myCharacter = findCharacter(myCharacterId);
-  gameInfo.textContent = `You are ${playerMark}${myCharacter ? ` (${myCharacter.name})` : ''}`;
+  setGameInfo(`You are ${playerMark}${myCharacter ? ` (${myCharacter.name})` : ''}`);
 
   renderCharacterSelector();
 }
@@ -186,28 +234,45 @@ function renderBoard() {
   });
 }
 
+function triggerBoardAttack(index) {
+  const targetCell = cells[index];
+  if (!targetCell) {
+    return;
+  }
+  restartAnimation(targetCell, 'cell-attack-charge', 280);
+  restartAnimation(board, 'board-rush', 280);
+}
+
+function triggerMoveImpact(index) {
+  const targetCell = cells[index];
+  if (!targetCell) {
+    return;
+  }
+  restartAnimation(targetCell, 'cell-impact-burst', 460);
+}
+
 function setTurnState({ active, turn }) {
   gameActive = active;
   myTurn = playerMark === turn;
   if (areCharactersLockedIn() && gameActive) {
     setGameStatus(myTurn ? 'Your turn' : "Opponent's turn");
   }
-  renderBoard();
 }
 
-function updateBoard(board) {
-  boardState = board;
+function updateBoard(nextBoard) {
+  boardState = nextBoard;
   renderBoard();
 }
 
 function handleCellClick(event) {
-  const cell = event.currentTarget;
-  const index = Number(cell.dataset.index);
+  const index = Number(event.currentTarget.dataset.index);
   if (!gameActive || !myTurn || !areCharactersLockedIn() || boardState[index]) {
     return;
   }
 
   myTurn = false;
+  pendingAnimatedMoveIndex = index;
+  triggerBoardAttack(index);
   setGameStatus('Sending move...');
   socket.emit('makeMove', { index });
 }
@@ -233,7 +298,7 @@ function openLobby(lobbyId) {
   resetCharacterState();
 
   showGameScreen();
-  gameInfo.textContent = 'Waiting for player to join...';
+  setGameInfo('Waiting for player to join...');
   setGameStatus('Waiting for player to join...');
   renderBoard();
   showModal('Waiting for player to join...', false);
@@ -336,9 +401,17 @@ socket.on('characterSelectionUpdate', (payload) => {
   renderBoard();
 });
 
-socket.on('moveAccepted', ({ board, currentTurn }) => {
+socket.on('moveAccepted', ({ index, mark, board, currentTurn }) => {
+  const moveWasAlreadyApplied = boardState[index] === mark;
+  const impactAnimationKey = `${index}:${mark}:${board.join('')}`;
   updateBoard(board);
+  if (!moveWasAlreadyApplied && index !== pendingAnimatedMoveIndex && impactAnimationKey !== lastImpactAnimationKey) {
+    triggerMoveImpact(index);
+    lastImpactAnimationKey = impactAnimationKey;
+  }
+  pendingAnimatedMoveIndex = -1;
   setTurnState({ active: true, turn: currentTurn });
+  renderBoard();
 });
 
 socket.on('gameOver', ({ result, winner, board }) => {
@@ -363,6 +436,7 @@ socket.on('lobbyError', (message) => {
 });
 
 socket.on('invalidMove', (message) => {
+  pendingAnimatedMoveIndex = -1;
   setGameStatus(message);
   renderBoard();
 });
