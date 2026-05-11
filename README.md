@@ -2,6 +2,8 @@
 
 A browser-based two-player Tic Tac Toe game using Node.js and Socket.io.
 
+![Game screenshot](public/assets/game_screenshot.png)
+
 ## Why I built this
 
 I built this project to get hands-on with WebSockets and real-time system design in a practical, user-facing way.  
